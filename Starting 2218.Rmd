@@ -1,0 +1,255 @@
+---
+title: "Models"
+output: html_document
+---
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(RColorBrewer)
+library(MatchingFrontier)
+library(StatMatch)
+library(stargazer)
+library(ggiraphExtra)
+```
+
+
+```{r}
+Data <- read_excel("~/Documents/GOV 2218/Final Paper Data.xlsx", sheet = 1)
+
+Data$Metals <- ifelse(is.na(Data$Metals), 0, 1)
+Data$Banking <- ifelse(is.na(Data$Banking), 0, 1)
+Data$Investments <- ifelse(is.na(Data$Investments), 0, 1)
+Data$Telecom <- ifelse(is.na(Data$Telecom), 0, 1)
+Data$Energy <- ifelse(is.na(Data$Energy), 0, 1)
+Data$Retail <- ifelse(is.na(Data$Retail), 0, 1)
+Data$Technology <- ifelse(is.na(Data$Technology), 0, 1)
+Data$Logistics <- ifelse(is.na(Data$Logistics), 0, 1)
+Data$RealEstate <- ifelse(is.na(Data$RealEstate), 0, 1)
+Data$YeltsinCxn <- ifelse(is.na(Data$YeltsinCxn), 0, 1)
+Data$PutinCxn <- ifelse(is.na(Data$PutinCxn), 0, 1)
+Data$`State Captor (biz to state)`<- ifelse(is.na(Data$`State Captor (biz to state)`), 0, 1)
+Data$`Business Captor (state to biz)`<- ifelse(is.na(Data$`Business Captor (state to biz)`), 0, 1)
+Data$`From 2003` <- ifelse(is.na(Data$`From 2003`), 0, 1)
+Data$`Red Director` <- ifelse(is.na(Data$`Red Director`), 0, 1)
+Data$`Always Private`<- ifelse(is.na(Data$`Always Private`), 0, 1)
+Data$Khodorkovsky <- ifelse(is.na(Data$Khodorkovsky), 0, 1)
+Data$PoliticalActivity<- ifelse(is.na(Data$PoliticalActivity), 0, 1)
+Data$Misc <- ifelse(is.na(Data$Misc), 0, 1)
+Data$Agri <- ifelse(is.na(Data$Agri), 0, 1)
+```
+
+```{r}
+summary(Data$`Business Captor (state to biz)`)
+```
+
+```{r}
+Data %>% pivot_longer(cols = 13:23) -> Data_long
+
+Data_long %>% filter(value == 1) -> Data_long
+
+Data_long$`First Year` <- as.numeric(Data_long$`First Year`)
+Data$`First Year` <- as.numeric(Data$`First Year`)
+
+```
+
+```{r}
+Data_long$WIB <- (Data_long$Wealth*1000000000)
+Data_long$YrOnList <- 2020 - (Data_long$`First Year`)
+Data$YrOnList <- 2020 - (Data$`First Year`)
+Data$WIB <- (Data$Wealth*1000000000)
+```
+
+
+```{r}
+Data_long <- Data_long[ -c(9,15, 22, 24:26) ]
+
+```
+
+
+#Matching Cases
+
+```{r}
+## Covariate Data Matrix 
+big_X <- Data %>% 
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value', 'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only treated units 
+
+X_treated <- Data %>%
+  filter(`Wealth Via Privatization` == 1) %>%
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only control units 
+
+X_control <- Data %>%
+  filter(`Wealth Via Privatization` == 0) %>%
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+```
+
+
+```{r}
+## Calculate Mahalanobis Distance between all observation-pairs 
+## using mahalanobis.dist function from the StatMatch package 
+M <- mahalanobis.dist(data.x = X_treated, 
+                      data.y = X_control,
+                      vc = var(big_X))
+
+## For each treated unit, find closest control unit 
+## in terms of Mahalanobis Distance 
+
+match_ids <- unlist(apply(M, 1, function(i){which(i == min(i))[1]}))
+
+## Create matched dataset 
+
+matched_data <- rbind(subset(Data, `Wealth Via Privatization` == 1),
+                      subset(Data, `Wealth Via Privatization` == 0)[match_ids,])
+```
+
+
+```{r}
+matched_data %>%
+  filter(., PoliticalActivity == 1) %>%
+  summarise(across(, mean))
+
+matched_data %>%
+  filter(., `State Captor (biz to state)` == 1) %>%
+  summarise(across(, mean))
+
+
+matched_data %>%
+  filter(., `Business Captor (state to biz)` == 1) %>%
+  summarise(across(, mean))
+```
+
+```{r}
+wealth.fit <- lm(Wealth ~ `Wealth Via Privatization` + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data)
+
+summary(wealth.fit)
+plot(wealth.fit)
+```
+
+```{r}
+no.outlier <- Data[-1,]
+```
+
+
+```{r}
+no.outlier <- no.outlier[-91,]
+```
+
+
+```{r}
+## Covariate Data Matrix 
+big_X <- no.outlier %>% 
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value', 'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only treated units 
+
+X_treated <- no.outlier %>%
+  filter(`Wealth Via Privatization` == 1) %>%
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only control units 
+
+X_control <- no.outlier %>%
+  filter(`Wealth Via Privatization` == 0) %>%
+  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+```
+
+
+```{r}
+## Calculate Mahalanobis Distance between all observation-pairs 
+## using mahalanobis.dist function from the StatMatch package 
+M <- mahalanobis.dist(data.x = X_treated, 
+                      data.y = X_control,
+                      vc = var(big_X))
+
+## For each treated unit, find closest control unit 
+## in terms of Mahalanobis Distance 
+
+match_ids <- unlist(apply(M, 1, function(i){which(i == min(i))[1]}))
+
+## Create matched dataset 
+
+matched_data2 <- rbind(subset(no.outlier, `Wealth Via Privatization` == 1),
+                      subset(no.outlier, `Wealth Via Privatization` == 0)[match_ids,])
+```
+
+
+```{r}
+wealth.fit2 <- lm(Wealth ~ `Wealth Via Privatization` + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = no.outlier)
+
+summary(wealth.fit2)
+plot(wealth.fit2)
+```
+
+
+Persistence Fit:
+```{r}
+fit3m <- lm(YrOnList ~ `Wealth Via Privatization` + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity + YeltsinCxn, data = matched_data)
+
+summary(fit3m)
+plot(fit3m)
+```
+
+```{r}
+stargazer(wealth.fit, wealth.fit2)
+```
+
+
+```{r}
+matched_data %>% pivot_longer(cols = 30:32) -> matched_long
+```
+
+```{r}
+matched_long %>%
+  filter(value == 1) %>%
+  ggplot(aes(x = `name`, y = Wealth, color = factor(`PutinCxn`))) +
+  geom_boxplot(aes(x = factor(`name`))) +
+ ggtitle("Wealth Breakdown by Political Activity") +
+  scale_color_discrete(labels = c("No", "Yes")) +
+  labs(color = "Putin Connection?") +
+  xlab("Political Role") +
+  scale_x_discrete(labels = c('Always Private','Business Captor','State Captor')) -> morepolitics
+
+ggsave("morepolitics.jpg")
+```
+
+```{r}
+matched_data %>%
+  ggplot(aes(x = `PoliticalActivity`, y = Wealth, color = factor(`PutinCxn`))) +
+  geom_boxplot(aes(x = factor(`PoliticalActivity`))) +
+  ggtitle("Political Activity by Putin Relationship") +
+  scale_color_discrete(labels = c("No", "Yes")) +
+  labs(color = "Putin Connection?") +
+  scale_x_discrete(labels = c('No', 'Yes')) -> politics
+
+ggsave("politics.jpg")
+```
+
+```{r}
+Data_long %>%
+  ggplot(aes(x = name, y = Wealth)) +
+  geom_boxplot() +
+  ggtitle("Wealth by Industry") +
+  xlab("Industry") -> industry
+
+ggsave("Industry.jpg")
+```
+
+
+Checking RSEs
+```{r}
+library(sandwich)
+library(lmtest)
+coeftest(wealth.fit, vcov = vcovHC(wealth.fit, type="HC1"))
+summary(wealth.fit)
+```
+

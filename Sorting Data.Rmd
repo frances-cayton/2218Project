@@ -1,0 +1,22 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(haven)
+library(tidyverse)
+library(RColorBrewer)
+forbesall <- read_dta("~/Documents/GitHub/2218Project/forbesall.dta")
+```
+
+```{r}
+forbesall %>%
+  filter(citizenship == "Russia") -> Russia
+write.csv(Russia, file = "RussiaBills.csv")
+```
+
+```{r}
+write.csv(forbesall, file = "forbes.csv")
+```
+
