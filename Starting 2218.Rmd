@@ -531,4 +531,14 @@ ggplot(CI_simed_mod3, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = 
 ggsave("polact.jpg", width = 6, height = 4)
 ```
 
+```{r}
+Data %>%
+  filter(PutinCxn == 1) %>%
+  filter(PoliticalActivity == 1)
+```
 
+```{r}
+Data %>%
+  filter(PutinCxn == 1) %>%
+  filter(PoliticalActivity == 0)
+```
