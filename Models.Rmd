@@ -14,7 +14,7 @@ library(mvtnorm)
 ```
 
 ```{r}
-Data <- read_excel("~/Documents/GOV 2218/Final Paper Datatest.xlsx", sheet = 1)
+Data <- read_excel("Final Paper Data.xlsx", sheet = 1)
 
 Data$Metals <- ifelse(is.na(Data$Metals), 0, 1)
 Data$Banking <- ifelse(is.na(Data$Banking), 0, 1)
@@ -289,6 +289,95 @@ pred.wealth
 ggsave("predwealth.jpg", width = 7, height = 5)
 ```
 
+Predicted pure politics
+```{r}
+set.seed(02138)
+#function for simulating coefficients
+sim_coeff <- function(coeff, vcov, ndraws = 5000){
+  return(mvtnorm::rmvnorm(ndraws, mean = coeff, sigma = vcov))
+}
+
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+simulate_CI <- function(fitted, nsims = 5000) {
+  
+  # observed covariate values in the data 
+  # setting all other covariates to a different reasonable choice (e.g. the mean, median, etc.) is also fine 
+  
+  X <- model.matrix(fitted) 
+  
+  # draw from the distribution of the parameters  
+  
+  coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
+                        sigma = vcov(fitted))  # nsims \times 13 matrix
+
+  
+  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
+  # ..as we vary ethnic fractionalization 
+
+  CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
+                     function (i) {
+                       X_Priv <- X
+                       X_NoPriv <- X
+                       
+
+                       X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
+                        X_Priv[, "PoliticalActivity"] <- 1
+                       X_NoPriv[, "PoliticalActivity"] <- 0
+                       X_Priv[, "YrOnList"] <- i
+                       X_NoPriv[, "YrOnList"] <- i
+                       
+                     
+   
+                       # Calculate difference
+                       pr_priv <- colMeans(X_Priv %*% t(coef_simed))
+                       pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
+   
+                       # Reformat the result
+                       res_qP <- quantile(pr_priv, prob = c(0.025, 0.5, 0.975))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.025, 0.5, 0.975))
+                       tibble(YrOnList = i,
+                              p025 = res_qP[1],
+                              median = res_qP[2],
+                              p975 = res_qP[3],
+                              mean = mean(pr_priv)
+                              ) -> resP
+                       resP$Priv <- c("Yes")
+              tibble(YrOnList = i,
+                              p025 = res_qNP[1],
+                              median = res_qNP[2],
+                              p975 = res_qNP[3],
+                              mean = mean(pr_nopriv)
+                              ) -> resNP
+              resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+                       return(res)
+                     }) %>% bind_rows()
+  return(CI_simed)
+}
+
+## Run the function for our model 
+CI_simed_mod8 <- simulate_CI(wealth.fit)
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+## Plot the results 
+ggplot(CI_simed_mod8, aes(x = YrOnList, y = mean, color = factor(Priv), fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .2)) +
+ xlab("Years on List") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Direct Political Activity?", fill = "Direct Political Activity?") +
+ ggtitle("Wealth in Billions by Political Activity for Privatization-Era Oligarchs") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> pred.wealthPolitics
+pred.wealthPolitics
+ggsave("predwealthPolitics.jpg", width = 7, height = 5)
+```
 
 
 Now, predicted for Putin:
@@ -456,7 +545,7 @@ CI_simed_mod3 <- simulate_CI(wealth.fit)
 ggplot(CI_simed_mod3, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
   geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
  xlab("Years on List") + ylab("Average Wealth (in Billions)") +
-    labs(color = "Politically Active?", fill = "Politically Active?") +
+    labs(color = "Direct Political Activity?", fill = "Direct Political Activity?") +
   ggtitle("Wealth in Billions by Political Activity - Putin Contacts") +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
@@ -471,6 +560,22 @@ ggsave("polact.jpg", width = 7, height = 5)
 Data %>%
   filter(PutinCxn == 1) %>%
   filter(PoliticalActivity == 1)
+
+Data %>%
+  filter(PutinCxn == 1) %>%
+  filter(Privatization == 1)
+
+Data %>% 
+  filter(`Privatization` == 1) 
+
+Data %>% 
+  filter(`Privatization` == 1) %>%
+   summarise_if(is.numeric, mean, na.rm = TRUE)
+
+Data %>% 
+  filter(`Privatization` == 0) %>%
+   summarise_if(is.numeric, mean, na.rm = TRUE)
+
 ```
 
 
@@ -551,7 +656,7 @@ CI_simed_mod4 <- simulate_CI(wealth.fit)
 ggplot(CI_simed_mod4, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
   geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
  xlab("Years on List") + ylab("Average Wealth (in Billions)") +
-    labs(color = "Politically Active?", fill = "Politically Active?") +
+    labs(color = "Direct Political Activity?", fill = "Direct Political Activity?") +
   ggtitle("Wealth in Billions by Political Activity - Not Putin Contacts") +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
@@ -578,6 +683,9 @@ Data %>%
 
 Data %>%
   filter(`Business Captor (state to biz)` == 1)
+
+Data %>%
+  filter(`Always Private` ==1)
 ```
 
 ```{r}
@@ -600,6 +708,7 @@ data_longer %>%
 ggsave("morepolitics.jpg", width = 7, height = 5)
 ```
 
+For guaging descriptive statistics: 
 ```{r}
 Data %>% 
   summarise_if(is.numeric, mean)
@@ -635,6 +744,19 @@ Data %>%
   filter(Khodorkovsky != 1)
 ```
 
+```{r}
+Data %>%
+  filter(`State Captor (biz to state)` == 1)
+
+Data %>%
+  filter(`Business Captor (state to biz)` == 1) 
+
+Data %>%
+  filter(`Always Private` == 1) 
+
+```
+
+Persistence plot: 
 ```{r}
 set.seed(02138)
 #function for simulating coefficients

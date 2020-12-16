@@ -14,7 +14,6 @@ library(ggiraphExtra)
 library(mvtnorm)
 ```
 
-
 ```{r}
 Data <- read_excel("~/Documents/GOV 2218/Final Paper Data.xlsx", sheet = 1)
 
@@ -36,11 +35,10 @@ Data$`Red Director` <- ifelse(is.na(Data$`Red Director`), 0, 1)
 Data$`Always Private`<- ifelse(is.na(Data$`Always Private`), 0, 1)
 Data$Khodorkovsky <- ifelse(is.na(Data$Khodorkovsky), 0, 1)
 Data$PoliticalActivity<- ifelse(is.na(Data$PoliticalActivity), 0, 1)
-Data$Misc <- ifelse(is.na(Data$Misc), 0, 1)
-Data$Agri <- ifelse(is.na(Data$Agri), 0, 1)
-```
+Data$Miscellaneous <- ifelse(is.na(Data$Miscellaneous), 0, 1)
+Data$Agriculture <- ifelse(is.na(Data$Agriculture), 0, 1)
+Data$`Media Interests` <- ifelse(is.na(Data$`Media Interests`), 0, 1)
 
-```{r}
 summary(Data$`Business Captor (state to biz)`)
 ```
 
@@ -52,22 +50,19 @@ Data_long %>% filter(value == 1) -> Data_long
 Data_long$`First Year` <- as.numeric(Data_long$`First Year`)
 Data$`First Year` <- as.numeric(Data$`First Year`)
 
-```
 
-```{r}
 names(Data)[10] <- "Privatization"
-```
-
-```{r}
 Data_long$WIB <- (Data_long$Wealth*1000000000)
 Data_long$YrOnList <- 2020 - (Data_long$`First Year`)
 Data$YrOnList <- 2020 - (Data$`First Year`)
 Data$WIB <- (Data$Wealth*1000000000)
+Data_long$Level <- log(Data_long$Wealth)
+Data$Level <- log(Data$Wealth)
 ```
 
 
 ```{r}
-Data_long <- Data_long[ -c(9,15, 22, 24:26) ]
+Data_long <- Data_long[ -c(9,15, 25:27) ]
 
 ```
 
@@ -75,23 +70,44 @@ Data_long <- Data_long[ -c(9,15, 22, 24:26) ]
 #Matching Cases
 
 ```{r}
-## Covariate Data Matrix 
 big_X <- Data %>% 
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value', 'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(one_of('Khodorkovsky', 'PoliticalActivity', 'Loans4Shares', 'Red Director', 'PutinCxn')) %>% 
   as.matrix()
 
 ## Only treated units 
 
 X_treated <- Data %>%
   filter(Privatization == 1) %>%
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(one_of('Khodorkovsky', 'PoliticalActivity', 'Loans4Shares', 'Red Director', 'PutinCxn')) %>% 
   as.matrix()
 
 ## Only control units 
 
 X_control <- Data %>%
   filter(Privatization == 0) %>%
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(one_of('Khodorkovsky', 'PoliticalActivity',  'Loans4Shares', 'Red Director', 'PutinCxn')) %>% 
+  as.matrix()
+```
+
+```{r}
+## Covariate Data Matrix 
+big_X <- Data %>% 
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes',  'Nezavisimaya', 'Notes (Treisman)', 'PoliticalRole',  'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only treated units 
+
+X_treated <- Data %>%
+  filter(Privatization == 1) %>%
+  dplyr::secect(one_of('Khodorkovsky', 'PoliticalActivity', 'Media Interests', 'Loans4Shares', 'Red Director', 'PutinCxn'))
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Nezavisimaya', 'Notes (Treisman)', 'PoliticalRole',  'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  as.matrix()
+
+## Only control units 
+
+X_control <- Data %>%
+  filter(Privatization == 0) %>%
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Nezavisimaya',  'Notes (Treisman)', 'PoliticalRole',  'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
   as.matrix()
 ```
 
@@ -100,8 +116,7 @@ X_control <- Data %>%
 ## Calculate Mahalanobis Distance between all observation-pairs 
 ## using mahalanobis.dist function from the StatMatch package 
 M <- mahalanobis.dist(data.x = X_treated, 
-                      data.y = X_control,
-                      vc = var(big_X))
+                      data.y = X_control)
 
 ## For each treated unit, find closest control unit 
 ## in terms of Mahalanobis Distance 
@@ -131,10 +146,22 @@ matched_data %>%
 ```
 
 ```{r}
-wealth.fit <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data)
+wealth.fit <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` +  `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data)
 
 summary(wealth.fit)
 plot(wealth.fit)
+
+nmwealth.fit <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `Media Interests` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = Data)
+
+summary(nmwealth.fit)
+plot(nmwealth.fit)
+```
+
+```{r}
+wealth.fitlev <- lm(Level ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data)
+
+summary(wealth.fitlev)
+plot(wealth.fitlev)
 ```
 
 ```{r}
@@ -150,21 +177,21 @@ no.outlier <- no.outlier[-91,]
 ```{r}
 ## Covariate Data Matrix 
 big_X <- no.outlier %>% 
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value', 'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value', 'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
   as.matrix()
 
 ## Only treated units 
 
 X_treated <- no.outlier %>%
   filter(Privatization == 1) %>%
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
   as.matrix()
 
 ## Only control units 
 
 X_control <- no.outlier %>%
   filter(Privatization == 0) %>%
-  dplyr::select(-one_of('Wealth', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
+  dplyr::select(-one_of('Wealth', 'Level', 'From 2003', 'YrOnList', 'First Year', 'Name', 'Origin', 'Industry', 'Country', 'Russia Rank', 'WorldRank', 'name', 'WIB', 'SecondWave', 'YeltsinCxn', 'Business Captor (state to biz)', 'value',  'My Notes', 'Notes (Treisman)', 'PoliticalRole', 'Media Interests', 'Significant Interest', '2003 Wealth', 'Loans4Shares', 'Second Wave', 'State Captor (biz to state)')) %>% 
   as.matrix()
 ```
 
@@ -173,8 +200,7 @@ X_control <- no.outlier %>%
 ## Calculate Mahalanobis Distance between all observation-pairs 
 ## using mahalanobis.dist function from the StatMatch package 
 M <- mahalanobis.dist(data.x = X_treated, 
-                      data.y = X_control,
-                      vc = var(big_X))
+                      data.y = X_control)
 
 ## For each treated unit, find closest control unit 
 ## in terms of Mahalanobis Distance 
@@ -189,14 +215,25 @@ matched_data2 <- rbind(subset(no.outlier, Privatization == 1),
 
 
 ```{r}
-wealth.fit2 <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = no.outlier)
+wealth.fit2 <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data2)
 
 summary(wealth.fit2)
 plot(wealth.fit2)
+
+nmwealth.fit2 <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `Media Interests` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = no.outlier)
+
+summary(nmwealth.fit2)
+plot(nmwealth.fit2)
 ```
 
+```{r}
+wealth.fit2lev <- lm(Level ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = matched_data2)
 
-Persistence Fit:
+summary(wealth.fit2lev)
+plot(wealth.fit2lev)
+```
+
+# Persistence Fit:
 ```{r}
 fit3m <- lm(YrOnList ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `State Captor (biz to state)` + PutinCxn*PoliticalActivity + YeltsinCxn, data = matched_data)
 
@@ -221,10 +258,11 @@ matched_long %>%
  ggtitle("Wealth Breakdown by Political Activity") +
   scale_color_discrete(labels = c("No", "Yes")) +
   labs(color = "Putin Connection?") +
+  ylab("Wealth (in Billions)") +
   xlab("Political Role") +
   scale_x_discrete(labels = c('Always Private','Business Captor','State Captor')) -> morepolitics
 
-ggsave("morepolitics.jpg")
+ggsave("morepolitics.jpg", width = 7, height = 5)
 ```
 
 ```{r}
@@ -244,9 +282,10 @@ Data_long %>%
   ggplot(aes(x = name, y = Wealth)) +
   geom_boxplot() +
   ggtitle("Wealth by Industry") +
+  ylab("Wealth (in Billions)") +
   xlab("Industry") -> industry
 
-ggsave("Industry.jpg")
+ggsave("Industry.jpg", width = 7, height = 5)
 ```
 
 ```{r}
@@ -257,7 +296,7 @@ ggplot(Data_long, aes(x="", y=value, fill=name)) +
   ggtitle("Oligarch Industry Breakdown") +
     labs(fill = "Industry") -> industries 
 
-ggsave("industries.jpg")
+ggsave("industries.jpg", width = 6, height = 4)
 ```
 
 
@@ -355,11 +394,25 @@ ggplot(CI_simed_mod, aes(x = YrOnList, y = mean, color = factor(Priv), fill = fa
   ggtitle("Wealth in Billions by Privatization") +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
   geom_line() -> pred.wealth
-
-ggsave("predwealth.jpg", width = 6, height = 4)
+pred.wealth
+#ggsave("predwealth.jpg", width = 7, height = 5)
 ```
-
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+CI_simed_mod2 <- simulate_CI(wealth.fitlev)
+## Plot the results 
+ggplot(CI_simed_mod2, aes(x = YrOnList, y = mean, color = factor(Priv), fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .2)) +
+ xlab("Years on List") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Wealth via Privatization?", fill = "Wealth via Privatization?") +
+  ggtitle("Wealth in Billions by Privatization") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() 
+#ggsave("predwealth.jpg", width = 7, height = 5)
+```
 
 Now, predicted for Putin:
 
@@ -386,7 +439,8 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        X_Priv <- X
                        X_NoPriv <- X
                        
-
+X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
                        X_Priv[, "PutinCxn"] <- 1
                        X_NoPriv[, "PutinCxn"] <- 0
                        X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 1*i
@@ -441,6 +495,7 @@ ggplot(CI_simed_mod2, aes(x = YrOnList, y = mean, color = factor(Priv), fill = f
   ggtitle("Wealth in Billions by Putin Connection") +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
   geom_line() -> putinxn
 
 ggsave("putinconnection.jpg", width = 6, height = 4)
@@ -469,17 +524,20 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        X_Priv <- X
                        X_NoPriv <- X
                        
-
+ X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
                        X_Priv[, "PoliticalActivity"] <- 1
                        X_NoPriv[, "PoliticalActivity"] <- 0
                        X_NoPriv[, "PutinCxn"] <- 1
-                       X_NoPriv[, "PutinCxn"] <- 1
+                       X_Priv[, "PutinCxn"] <- 1
                        X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 1*i
                        X_NoPriv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*i
                        X_Priv[, "PutinCxn:PoliticalActivity"] <- 1
                        X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
                        X_Priv[, "PutinCxn:YrOnList"] <- i*1
                       X_NoPriv[, "PutinCxn:YrOnList"] <- i*1
+                        X_NoPriv[, "PoliticalActivity:YrOnList"] <- i*0
+                        X_Priv[, "PoliticalActivity:YrOnList"] <- i*1
                        X_Priv[, "YrOnList"] <- i
                        X_NoPriv[, "YrOnList"] <- i
                        
@@ -517,18 +575,20 @@ CI_simed_mod3 <- simulate_CI(wealth.fit)
 ```
 
 
+
 ```{r}
 ggplot(CI_simed_mod3, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
   geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
  xlab("Years on List") + ylab("Average Wealth (in Billions)") +
     labs(color = "Politically Active?", fill = "Politically Active?") +
-  ggtitle("Wealth in Billions by Political Activity") +
+  ggtitle("Wealth in Billions by Political Activity - Putin Contacts") +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
   geom_line() -> polact
 
 
-ggsave("polact.jpg", width = 6, height = 4)
+ggsave("polact.jpg")
 ```
 
 ```{r}
@@ -537,8 +597,172 @@ Data %>%
   filter(PoliticalActivity == 1)
 ```
 
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+simulate_CI <- function(fitted, nsims = 5000) {
+  
+  # observed covariate values in the data 
+  # setting all other covariates to a different reasonable choice (e.g. the mean, median, etc.) is also fine 
+  
+  X <- model.matrix(fitted) 
+  
+  # draw from the distribution of the parameters  
+  
+  coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
+                        sigma = vcov(fitted))  # nsims \times 13 matrix
+
+  
+  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
+  # ..as we vary ethnic fractionalization 
+
+  CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
+                     function (i) {
+                       X_Priv <- X
+                       X_NoPriv <- X
+                       
+ X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
+                       X_Priv[, "PoliticalActivity"] <- 1
+                       X_NoPriv[, "PoliticalActivity"] <- 0
+                       X_NoPriv[, "PutinCxn"] <- 0
+                       X_Priv[, "PutinCxn"] <- 0
+                       X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*i
+                       X_NoPriv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*i
+                       X_Priv[, "PutinCxn:PoliticalActivity"] <- 0
+                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
+                       X_Priv[, "PutinCxn:YrOnList"] <- i*0
+                      X_NoPriv[, "PutinCxn:YrOnList"] <- i*0
+                      X_NoPriv[, "PoliticalActivity:YrOnList"] <- i*0
+                        X_Priv[, "PoliticalActivity:YrOnList"] <- i*1
+                       X_Priv[, "YrOnList"] <- i
+                       X_NoPriv[, "YrOnList"] <- i
+                       
+                         
+   
+                       # Calculate difference
+                       pr_priv <- colMeans(X_Priv %*% t(coef_simed))
+                       pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
+   
+                       # Reformat the result
+                       res_qP <- quantile(pr_priv, prob = c(0.025, 0.5, 0.975))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.025, 0.5, 0.975))
+                       tibble(YrOnList = i,
+                              p025 = res_qP[1],
+                              median = res_qP[2],
+                              p975 = res_qP[3],
+                              mean = mean(pr_priv)
+                              ) -> resP
+                       resP$Priv <- c("Yes")
+              tibble(YrOnList = i,
+                              p025 = res_qNP[1],
+                              median = res_qNP[2],
+                              p975 = res_qNP[3],
+                              mean = mean(pr_nopriv)
+                              ) -> resNP
+              resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+                       return(res)
+                     }) %>% bind_rows()
+  return(CI_simed)
+}
+
+## Run the function for our model 
+CI_simed_mod4 <- simulate_CI(wealth.fit)
+```
+
+
+```{r}
+ggplot(CI_simed_mod4, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
+ xlab("Years on List") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Politically Active?", fill = "Politically Active?") +
+  ggtitle("Wealth in Billions by Political Activity - Not Putin Contacts") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> notactive
+
+ggsave("notactive.jpg")
+```
+
+
 ```{r}
 Data %>%
   filter(PutinCxn == 1) %>%
   filter(PoliticalActivity == 0)
+
+
+Data%>%
+  filter(Telecom == 1) 
 ```
+
+Running with new estimates of political power
+
+```{r}
+wealth.fitNez<- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` + `Business Captor (state to biz)` + `State Captor (biz to state)` + Nezavisimaya + PutinCxn*PoliticalActivity*YrOnList , data = matched_data)
+
+summary(wealth.fitNez)
+plot(wealth.fitNez)
+```
+
+Who since privatization, how much money: 
+```{r}
+Data %>%
+  filter(Privatization == 1) %>%
+summarize(sum = sum(Wealth))
+
+Data_long %>%
+  ggplot(aes(x = name, y = Wealth, color = factor(`Wealth Via Privatization`))) +
+  geom_boxplot() +
+  ggtitle("Wealth by Industry") +
+  ylab("Wealth (in Billions)") +
+  labs(color = "Privatization?") +
+  scale_color_discrete(labels = c("No", "Yes")) +
+  xlab("Industry") + 
+    theme(plot.title = element_text(hjust = 0.5)) +
+  theme_minimal() -> industry
+ggsave("Industry.jpg", width = 9, height = 5)
+```
+
+
+```{r}
+#ggsave("Industry.jpg", width = 7, height = 5)
+
+Data_long %>%
+  filter(`Wealth Via Privatization` == 1) %>%
+ggplot(aes(x="", y=value, fill=name)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+   theme_void() +
+  ggtitle("Privatization-Era Industry Breakdown") +
+    labs(fill = "Industry") -> industriespriv
+
+ggsave("industriespriv.jpg", width = 6, height = 4)
+
+Data_long %>%
+  filter(`Wealth Via Privatization` == 0) %>%
+ggplot(aes(x="", y=value, fill=name)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+   theme_void() +
+  ggtitle("Putin-Era Industry Breakdown") +
+    labs(fill = "Industry") -> industriesput
+
+ggsave("industriesput.jpg", width = 6, height = 4)
+
+```
+
+
+
+```{r}
+Data %>% 
+  filter(`Privatization` == 1) %>%
+   summarise_if(is.numeric, mean, na.rm = TRUE)
+
+Data %>% 
+  filter(`Privatization` == 0) %>%
+   summarise_if(is.numeric, mean, na.rm = TRUE)
+
+
+```
+
