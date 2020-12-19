@@ -51,6 +51,7 @@ Data$`First Year` <- as.numeric(Data$`First Year`)
 
 
 names(Data)[10] <- "Privatization"
+names(Data_long)[10] <- "Privatization"
 Data_long$WIB <- (Data_long$Wealth*1000000000)
 Data_long$YrOnList <- 2020 - (Data_long$`First Year`)
 Data$YrOnList <- 2020 - (Data$`First Year`)
@@ -65,44 +66,22 @@ Data_long <- Data_long[ -c(9,15, 25:27) ]
 ```
 
 ```{r}
-wealth.fit <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList + YeltsinCxn, data = Data)
+wealth.fit<- lm(Wealth ~ Privatization + Loans4Shares + Energy + Metals + Investments + Banking + Agriculture + Retail + Technology + Telecom + Miscellaneous + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList + YeltsinCxn, data = Data)
 
 summary(wealth.fit)
 plot(wealth.fit)
+
 ```
 
 ```{r}
-wealth.fitlev <- lm(Level ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList + YeltsinCxn, data = Data)
+wealth.fitlev <- lm(Level ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList + YeltsinCxn + Energy + Metals + Investments + Banking + Agriculture + Retail + Technology + Telecom + Miscellaneous, data = Data)
 
 summary(wealth.fitlev)
 plot(wealth.fitlev)
 ```
 
 ```{r}
-no.outlier <- Data[-1,]
-```
-
-
-```{r}
-no.outlier <- no.outlier[-91,]
-```
-
-```{r}
-wealth.fit2 <- lm(Wealth ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `Media Interests` + Khodorkovsky + Nezavisimaya + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = no.outlier)
-
-summary(wealth.fit2)
-plot(wealth.fit2)
-```
-
-```{r}
-wealth.fit2lev <- lm(Level ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + `Media Interests`+ Nezavisimaya + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity*YrOnList, data = no.outlier)
-
-summary(wealth.fit2lev)
-plot(wealth.fit2lev)
-```
-
-```{r}
-fit3m <- lm(YrOnList ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity + YeltsinCxn, data = Data)
+fit3m <- lm(YrOnList ~ Privatization + Loans4Shares + SecondWave + `Always Private` + `Red Director` +  `Business Captor (state to biz)` + Nezavisimaya + `Media Interests` + Khodorkovsky + `State Captor (biz to state)` + PutinCxn*PoliticalActivity + YeltsinCxn + Energy + Metals + Investments + Banking + Agriculture + Retail + Technology + Telecom + Miscellaneous, data = Data)
 
 summary(fit3m)
 plot(fit3m)
@@ -225,9 +204,7 @@ simulate_CI <- function(fitted, nsims = 5000) {
   coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
                         sigma = vcov(fitted))  # nsims \times 13 matrix
 
-  
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
+
 
   CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
                      function (i) {
@@ -286,7 +263,7 @@ ggplot(CI_simed_mod, aes(x = YrOnList, y = mean, color = factor(Priv), fill = fa
   geom_hline(yintercept= 0) +
   geom_line() -> pred.wealth
 pred.wealth
-ggsave("predwealth.jpg", width = 7, height = 5)
+ggsave("predwealth.jpg", width = 9, height = 5)
 ```
 
 Predicted pure politics
@@ -313,9 +290,7 @@ simulate_CI <- function(fitted, nsims = 5000) {
   coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
                         sigma = vcov(fitted))  # nsims \times 13 matrix
 
-  
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
+
 
   CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
                      function (i) {
@@ -376,7 +351,7 @@ ggplot(CI_simed_mod8, aes(x = YrOnList, y = mean, color = factor(Priv), fill = f
   geom_hline(yintercept= 0) +
   geom_line() -> pred.wealthPolitics
 pred.wealthPolitics
-ggsave("predwealthPolitics.jpg", width = 7, height = 5)
+ggsave("predwealthPolitics.jpg", width = 9, height = 5)
 ```
 
 
@@ -397,9 +372,6 @@ simulate_CI <- function(fitted, nsims = 5000) {
                         sigma = vcov(fitted))  # nsims \times 13 matrix
 
   
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
-
   CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
                      function (i) {
                        X_Priv <- X
@@ -464,6 +436,8 @@ ggplot(CI_simed_mod2, aes(x = YrOnList, y = mean, color = factor(Priv), fill = f
   geom_hline(yintercept= 0) +
   geom_line() -> putincxn
 
+putincxn
+
 ggsave("putinconnection.jpg", width = 6, height = 4)
 ```
 
@@ -481,9 +455,6 @@ simulate_CI <- function(fitted, nsims = 5000) {
   coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
                         sigma = vcov(fitted))  # nsims \times 13 matrix
 
-  
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
 
   CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
                      function (i) {
@@ -514,8 +485,8 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
    
                        # Reformat the result
-                       res_qP <- quantile(pr_priv, prob = c(0.025, 0.5, 0.975))
-                       res_qNP <- quantile(pr_nopriv, prob = c(0.025, 0.5, 0.975))
+                       res_qP <- quantile(pr_priv, prob = c(0.05, 0.5, 0.95))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.05, 0.5, 0.95))
                        tibble(YrOnList = i,
                               p025 = res_qP[1],
                               median = res_qP[2],
@@ -572,6 +543,7 @@ Data %>%
   filter(`Privatization` == 1) %>%
    summarise_if(is.numeric, mean, na.rm = TRUE)
 
+
 Data %>% 
   filter(`Privatization` == 0) %>%
    summarise_if(is.numeric, mean, na.rm = TRUE)
@@ -591,10 +563,6 @@ simulate_CI <- function(fitted, nsims = 5000) {
   
   coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
                         sigma = vcov(fitted))  # nsims \times 13 matrix
-
-  
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
 
   CI_simed <- lapply(seq(min(Data$YrOnList), max(Data$YrOnList), length.out = 25),
                      function (i) {
@@ -625,8 +593,8 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
    
                        # Reformat the result
-                       res_qP <- quantile(pr_priv, prob = c(0.025, 0.5, 0.975))
-                       res_qNP <- quantile(pr_nopriv, prob = c(0.025, 0.5, 0.975))
+                       res_qP <- quantile(pr_priv, prob = c(0.05, 0.5, 0.95))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.05, 0.5, 0.95))
                        tibble(YrOnList = i,
                               p025 = res_qP[1],
                               median = res_qP[2],
@@ -665,6 +633,43 @@ ggplot(CI_simed_mod4, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = 
 
 ggsave("notactive.jpg", width = 7, height = 5)
 ```
+
+
+```{r}
+CI_simed_mod3$putin <- c("Yes")
+CI_simed_mod4$putin <- c("No")
+
+CI_simed_mod5 <- rbind(CI_simed_mod3, CI_simed_mod4)
+
+CI_simed_mod5 %>%
+  filter(Priv == "No") %>%
+  ggplot(aes(x = YrOnList, y = mean, color = factor(putin),  fill = factor(putin))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
+ xlab("Years on List") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Putin Connection?", fill = "Putin Connection?") +
+  ggtitle("Wealth in Billions - Not Politically Engaged") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> putinnotengaged
+
+ggsave("notengaged.jpg", width = 7, height = 5)
+
+CI_simed_mod5 %>%
+  filter(Priv == "Yes") %>%
+  ggplot(aes(x = YrOnList, y = mean, color = factor(putin),  fill = factor(putin))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
+ xlab("Years on List") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Putin Connection?", fill = "Putin Connection?") +
+  ggtitle("Wealth in Billions - Politically Engaged") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> putinengaged
+
+ggsave("engaged.jpg", width = 7, height = 5)
+```
+
 
 
 ```{r}
@@ -780,9 +785,7 @@ simulate_CI <- function(fitted, nsims = 5000) {
   coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
                         sigma = vcov(fitted))  # nsims \times 13 matrix
 
-  
-  # Calculate the predicted probabilities for contiguous / non-contiguous countries 
-  # ..as we vary ethnic fractionalization 
+
 
   CI_simed <- lapply(c(0,1),
                      function (i) {
@@ -791,11 +794,13 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        
 
                        X_Priv[, "Privatization"] <- 1
-                       X_NoPriv[, "Privatization"] <- 0
+                       X_NoPriv[, "Privatization"] <- 1
+                        X_Priv[, "PoliticalActivity"] <- 1
+                       X_NoPriv[, "PoliticalActivity"] <- 0
                        X_Priv[, "PutinCxn"] <- i
                        X_NoPriv[, "PutinCxn"] <- i
                        X_Priv[, "PutinCxn:PoliticalActivity"] <- i
-                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- i
+                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
                      
    
                        # Calculate difference
@@ -834,14 +839,284 @@ CI_simed_mod$PutinCxn <- as.factor(CI_simed_mod$PutinCxn)
 CI_simed_mod %>% pivot_longer(cols = 2:4) -> CI_simed_mod
 ```
 
+```{r}
+subset(CI_simed_mod, PutinCxn == 1) -> subset
+```
 
 ```{r, warning=FALSE, message=FALSE, fig.align='center'}
-ggplot(CI_simed_mod, aes(x = PutinCxn, y = value, color = factor(Priv))) +
+CI_simed_mod %>%
+ggplot(aes(x = PutinCxn, y = value, color = factor(Priv))) +
   geom_boxplot() +
  xlab("Putin Connection") + ylab("Years on List") +
- labs(color = "Wealth via Privatization?", fill = "Wealth via Privatization?") +
+ labs(color = "Politically Active?", fill = "Politically Active?") +
  ggtitle("Oligarch Persistence By Putin Connection") +
   scale_x_discrete(labels=c("No","Yes"))-> pred.persist
 pred.persist 
 ggsave("predpersist.jpg", width = 7, height = 5)
+```
+
+
+Varying Nezavisimaya: 
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+simulate_CI <- function(fitted, nsims = 5000) {
+  
+  # observed covariate values in the data 
+  # setting all other covariates to a different reasonable choice (e.g. the mean, median, etc.) is also fine 
+  
+  X <- model.matrix(fitted) 
+  
+  # draw from the distribution of the parameters  
+  
+  coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
+                        sigma = vcov(fitted))  # nsims \times 13 matrix
+
+  
+  CI_simed <- lapply(seq(0, 5, length.out = 25),
+                     function (i) {
+                       X_Priv <- X
+                       X_NoPriv <- X
+                       
+X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
+                       X_Priv[, "PutinCxn"] <- 1
+                       X_NoPriv[, "PutinCxn"] <- 0
+                       X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 1*15
+                       X_NoPriv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*15
+                       X_Priv[, "PutinCxn:PoliticalActivity"] <- 1
+                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
+                       X_Priv[, "PutinCxn:YrOnList"] <- 1*15
+                      X_NoPriv[, "PutinCxn:YrOnList"] <- 0
+                       X_Priv[, "YrOnList"] <- 15
+                       X_NoPriv[, "YrOnList"] <- 15
+                       X_Priv[, "Nezavisimaya"] <- i
+                       X_NoPriv[, "Nezavisimaya"] <- i
+                         
+   
+                       # Calculate difference
+                       pr_priv <- colMeans(X_Priv %*% t(coef_simed))
+                       pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
+   
+                       # Reformat the result
+                       res_qP <- quantile(pr_priv, prob = c(0.025, 0.5, 0.975))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.025, 0.5, 0.975))
+                       tibble(Nezavisimaya = i,
+                              p025 = res_qP[1],
+                              median = res_qP[2],
+                              p975 = res_qP[3],
+                              mean = mean(pr_priv)
+                              ) -> resP
+                       resP$Priv <- c("Yes")
+              tibble(Nezavisimaya = i,
+                              p025 = res_qNP[1],
+                              median = res_qNP[2],
+                              p975 = res_qNP[3],
+                              mean = mean(pr_nopriv)
+                              ) -> resNP
+              resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+                       return(res)
+                     }) %>% bind_rows()
+  return(CI_simed)
+}
+
+## Run the function for our model 
+CI_simed_mod9 <- simulate_CI(wealth.fit)
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+## Plot the results 
+ggplot(CI_simed_mod9, aes(x = Nezavisimaya, y = mean, color = factor(Priv), fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) +
+ xlab("Nezavisimaya") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Putin Cxn?", fill = "Putin Cxn?") +
+  ggtitle("Wealth in Billions by Putin Connection") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() #-> putincxn
+
+#putincxn
+
+#ggsave("putinconnection.jpg", width = 6, height = 4)
+```
+
+# Not politically engaged
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+
+simulate_CI <- function(fitted, nsims = 5000) {
+  
+  # observed covariate values in the data 
+  # setting all other covariates to a different reasonable choice (e.g. the mean, median, etc.) is also fine 
+  
+  X <- model.matrix(fitted) 
+  
+  # draw from the distribution of the parameters  
+  
+  coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
+                        sigma = vcov(fitted))  # nsims \times 13 matrix
+
+  
+  CI_simed <- lapply(seq(0, 5, length.out = 25),
+                     function (i) {
+                       X_Priv <- X
+                       X_NoPriv <- X
+                       
+X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
+                       X_Priv[, "PutinCxn"] <- 1
+                       X_NoPriv[, "PutinCxn"] <- 0
+                       X_Priv[, "PoliticalActivity"] <- 1
+                       X_NoPriv[, "PoliticalActivity"] <- 1
+                       X_Priv[, "PoliticalActivity:YrOnList"] <- 1*15
+                       X_NoPriv[, "PoliticalActivity:YrOnList"] <- 1*15
+                       X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 1*15
+                       X_NoPriv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*15
+                       X_Priv[, "PutinCxn:PoliticalActivity"] <- 1
+                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
+                       X_Priv[, "PutinCxn:YrOnList"] <- 1*15
+                      X_NoPriv[, "PutinCxn:YrOnList"] <- 0
+                       X_Priv[, "YrOnList"] <- 15
+                       X_NoPriv[, "YrOnList"] <- 15
+                       X_Priv[, "Nezavisimaya"] <- i
+                       X_NoPriv[, "Nezavisimaya"] <- i
+                         
+   
+                       # Calculate difference
+                       pr_priv <- colMeans(X_Priv %*% t(coef_simed))
+                       pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
+   
+                       # Reformat the result
+                       res_qP <- quantile(pr_priv, prob = c(0.05, 0.5, 0.95))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.05, 0.5, 0.95))
+                       tibble(Nezavisimaya = i,
+                              p025 = res_qP[1],
+                              median = res_qP[2],
+                              p975 = res_qP[3],
+                              mean = mean(pr_priv)
+                              ) -> resP
+                       resP$Priv <- c("Yes")
+              tibble(Nezavisimaya = i,
+                              p025 = res_qNP[1],
+                              median = res_qNP[2],
+                              p975 = res_qNP[3],
+                              mean = mean(pr_nopriv)
+                              ) -> resNP
+              resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+                       return(res)
+                     }) %>% bind_rows()
+  return(CI_simed)
+}
+
+## Run the function for our model 
+CI_simed_mod9 <- simulate_CI(wealth.fit)
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+## Plot the results 
+ggplot(CI_simed_mod9, aes(x = Nezavisimaya, y = mean, color = factor(Priv), fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) +
+ xlab("Nezavisimaya") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Putin Connection?", fill = "Putin Connection?") +
+  ggtitle("Wealth in Billions - Politically Engaged") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> activePower
+
+activePower
+
+ggsave("activePower.jpg", width = 7, height = 5)
+```
+
+# Not politically engaged
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+
+simulate_CI <- function(fitted, nsims = 5000) {
+  
+  # observed covariate values in the data 
+  # setting all other covariates to a different reasonable choice (e.g. the mean, median, etc.) is also fine 
+  
+  X <- model.matrix(fitted) 
+  
+  # draw from the distribution of the parameters  
+  
+  coef_simed <- rmvnorm(nsims, mean = coef(fitted), 
+                        sigma = vcov(fitted))  # nsims \times 13 matrix
+
+  
+  CI_simed <- lapply(seq(0, 5, length.out = 25),
+                     function (i) {
+                       X_Priv <- X
+                       X_NoPriv <- X
+                       
+X_Priv[, "Privatization"] <- 1
+                       X_NoPriv[, "Privatization"] <- 1
+                       X_Priv[, "PutinCxn"] <- 1
+                       X_NoPriv[, "PutinCxn"] <- 1
+                       X_Priv[, "PoliticalActivity"] <- 0
+                       X_NoPriv[, "PoliticalActivity"] <- 0
+                         X_Priv[, "PoliticalActivity:YrOnList"] <- 0*15
+                       X_NoPriv[, "PoliticalActivity:YrOnList"] <- 0*15
+                       X_Priv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 1*15
+                       X_NoPriv[, "PutinCxn:PoliticalActivity:YrOnList"] <- 0*15
+                       X_Priv[, "PutinCxn:PoliticalActivity"] <- 1
+                       X_NoPriv[, "PutinCxn:PoliticalActivity"] <- 0
+                       X_Priv[, "PutinCxn:YrOnList"] <- 1*15
+                      X_NoPriv[, "PutinCxn:YrOnList"] <- 0
+                       X_Priv[, "YrOnList"] <- 15
+                       X_NoPriv[, "YrOnList"] <- 15
+                       X_Priv[, "Nezavisimaya"] <- i
+                       X_NoPriv[, "Nezavisimaya"] <- i
+                         
+   
+                       # Calculate difference
+                       pr_priv <- colMeans(X_Priv %*% t(coef_simed))
+                       pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
+   
+                       # Reformat the result
+                       res_qP <- quantile(pr_priv, prob = c(0.05, 0.5, 0.95))
+                       res_qNP <- quantile(pr_nopriv, prob = c(0.05, 0.5, 0.95))
+                       tibble(Nezavisimaya = i,
+                              p025 = res_qP[1],
+                              median = res_qP[2],
+                              p975 = res_qP[3],
+                              mean = mean(pr_priv)
+                              ) -> resP
+                       resP$Priv <- c("Yes")
+              tibble(Nezavisimaya = i,
+                              p025 = res_qNP[1],
+                              median = res_qNP[2],
+                              p975 = res_qNP[3],
+                              mean = mean(pr_nopriv)
+                              ) -> resNP
+              resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+                       return(res)
+                     }) %>% bind_rows()
+  return(CI_simed)
+}
+
+## Run the function for our model 
+CI_simed_mod9 <- simulate_CI(wealth.fit)
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+## Plot the results 
+ggplot(CI_simed_mod9, aes(x = Nezavisimaya, y = mean, color = factor(Priv), fill = factor(Priv))) +
+  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) +
+ xlab("Nezavisimaya") + ylab("Average Wealth (in Billions)") +
+    labs(color = "Putin", fill = "Putin") +
+  ggtitle("Wealth in Billions - Not Politically Engaged") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  geom_hline(yintercept= 0) +
+  geom_line() -> notactivePOWER
+
+notactivePOWER
+
+ggsave("notactivePOWER.jpg", width = 7, height = 5)
 ```
