@@ -43,6 +43,7 @@ Data$PoliticalActivityGeneral <- ifelse(is.na(Data$PoliticalActivityGeneral), 0,
 summary(Data$`Business Captor (state to biz)`)
 ```
 
+
 ```{r}
 Data %>% pivot_longer(cols = 13:23) -> Data_long
 
@@ -66,6 +67,7 @@ Data$Level <- log(Data$Wealth)
 ```{r}
 Data_long <- Data_long[ -c(9,15, 25:27) ]
 ```
+
 
 
 ```{r}
@@ -158,21 +160,27 @@ ggsave("politics.jpg")
 
 ```{r}
 Data_long %>%
-  ggplot(aes(x = name, y = Wealth)) +
+  ggplot(aes(x = name, y = Wealth, color = factor(Privatization))) +
   geom_boxplot() +
-  ggtitle("Wealth by Industry") +
+  ggtitle("Oligarch Wealth by Industry") +
+    labs(color = "Privatization?") + 
+  scale_color_discrete(labels = c("No", "Yes")) +
   ylab("Wealth (in Billions)") +
   xlab("Industry") -> industry
 
-ggsave("Industry.jpg", width = 7, height = 5)
+ggsave("Industry.jpg", width = 10, height = 5)
 ```
 
 ```{r}
-ggplot(Data_long, aes(x="", y=value, fill=name)) +
-  geom_bar(stat="identity", width=1) +
+Data_long$Privatization <- factor(Data_long$Privatization, levels = c(0, 1), labels = c("Putin-Era", "Privatization-Era"))
+
+Data_long %>%
+ggplot(aes(x="", y=value, fill=name)) +
+  geom_bar(stat="identity", position = position_fill(), width=1) +
   coord_polar("y", start=0) +
    theme_void() +
-  ggtitle("Oligarch Industry Breakdown") +
+  facet_grid(~Privatization) +
+  ggtitle("Industry Breakdown by Era") +
     labs(fill = "Industry") -> industries 
 
 ggsave("industries.jpg", width = 6, height = 4)
@@ -342,21 +350,7 @@ CI_simed_mod3 <- simulate_CI(wealth.fit)
 ```
 
 
-```{r}
-ggplot(CI_simed_mod3, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
-  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
- xlab("Years on List") + ylab("Average Wealth (in Billions)") +
-    labs(color = "Direct Political Activity?", fill = "Direct Political Activity?") +
-  ggtitle("Wealth in Billions by Political Activity - Putin Contacts") +
-  scale_fill_brewer(palette = "Set1") +
-  scale_color_brewer(palette = "Set1") +
-  geom_hline(yintercept= 0) +
-  geom_line() -> polact
-
-polact
-ggsave("polact.jpg", width = 7, height = 5)
-```
-
+Summary stats:
 ```{r}
 Data %>%
   filter(PutinCxn == 1) %>%
@@ -373,11 +367,19 @@ Data %>%
   filter(`Privatization` == 1) %>%
    summarise_if(is.numeric, mean, na.rm = TRUE)
 
+Data %>% 
+  filter(`Privatization` == 1) %>%
+   summarise_if(is.numeric, sum, na.rm = TRUE)
 
 Data %>% 
   filter(`Privatization` == 0) %>%
    summarise_if(is.numeric, mean, na.rm = TRUE)
 
+Data %>% 
+   summarise_if(is.numeric, mean, na.rm = TRUE)
+
+Data %>% 
+   filter(Nezavisimaya != 0)
 ```
 
 
@@ -446,21 +448,6 @@ simulate_CI <- function(fitted, nsims = 5000) {
 
 ## Run the function for our model 
 CI_simed_mod4 <- simulate_CI(wealth.fit)
-```
-
-
-```{r}
-ggplot(CI_simed_mod4, aes(x = YrOnList, y = mean, color = factor(Priv),  fill = factor(Priv))) +
-  geom_ribbon(aes(ymin = p025, ymax = p975, alpha = .05)) + 
- xlab("Years on List") + ylab("Average Wealth (in Billions)") +
-    labs(color = "Direct Political Activity?", fill = "Direct Political Activity?") +
-  ggtitle("Wealth in Billions by Political Activity - Not Putin Contacts") +
-  scale_fill_brewer(palette = "Set1") +
-  scale_color_brewer(palette = "Set1") +
-  geom_hline(yintercept= 0) +
-  geom_line() -> notactive
-notactive
-ggsave("notactive.jpg", width = 7, height = 5)
 ```
 
 
@@ -542,7 +529,7 @@ data_longer %>%
 ggsave("morepolitics.jpg", width = 7, height = 5)
 ```
 
-For guaging descriptive statistics: 
+For gauging descriptive statistics: 
 ```{r}
 Data %>% 
   summarise_if(is.numeric, mean)
@@ -590,7 +577,8 @@ Data %>%
 
 ```
 
-Persistence plot: 
+
+## Persistence Visualization
 ```{r}
 set.seed(02138)
 #function for simulating coefficients
@@ -618,11 +606,11 @@ simulate_CI <- function(fitted, nsims = 5000) {
 
   CI_simed <- lapply(c(0,1),
                      function (i) {
-                       X_Priv <- X
+                         X_Priv <- X
                        X_NoPriv <- X
                        
-
-                        X_Priv[, "PoliticalActivity"] <- 1
+    
+                      X_Priv[, "PoliticalActivity"] <- 1
                        X_NoPriv[, "PoliticalActivity"] <- 0
                        X_Priv[, "PutinCxn"] <- i
                        X_NoPriv[, "PutinCxn"] <- i
@@ -633,11 +621,13 @@ simulate_CI <- function(fitted, nsims = 5000) {
                        # Calculate difference
                        pr_priv <- colMeans(X_Priv %*% t(coef_simed))
                        pr_nopriv <- colMeans(X_NoPriv %*% t(coef_simed))
-   
-                       # Reformat the result
+
+                     
+       # Reformat the result
                        res_qP <- quantile(pr_priv, prob = c(0.05,  0.95))
                        res_qNP <- quantile(pr_nopriv, prob = c(0.05,  0.95))
-                       tibble(PutinCxn = i,
+                        
+                  tibble(PutinCxn = i,
                               p025 = res_qP[1],
                               p975 = res_qP[2],
                               mean = mean(pr_priv)
@@ -649,6 +639,8 @@ simulate_CI <- function(fitted, nsims = 5000) {
                               mean = mean(pr_nopriv)
                               ) -> resNP
               resNP$Priv <- c("No")
+              rbind(resP, resNP) -> res
+            
               rbind(resP, resNP) -> res
                        return(res)
                      }) %>% bind_rows()
@@ -666,9 +658,6 @@ CI_simed_mod$PutinCxn <- as.factor(CI_simed_mod$PutinCxn)
 CI_simed_mod %>% pivot_longer(cols = 2:4) -> CI_simed_mod
 ```
 
-```{r}
-subset(CI_simed_mod, PutinCxn == 1) -> subset
-```
 
 ```{r, warning=FALSE, message=FALSE, fig.align='center'}
 CI_simed_mod %>%
@@ -676,8 +665,9 @@ ggplot(aes(x = PutinCxn, y = value, color = factor(Priv))) +
   geom_boxplot() +
  xlab("Putin Connection") + ylab("Years on List") +
  labs(color = "Politically Active?", fill = "Politically Active?") +
- ggtitle("Oligarch Persistence By Putin Connection") +
+  ggtitle("Oligarch Persistence By Putin Connection") +
   scale_x_discrete(labels=c("No","Yes"))-> pred.persist
 pred.persist 
 ggsave("predpersist.jpg", width = 7, height = 5)
+
 ```
